@@ -11,7 +11,7 @@ public class ConexionBD {
 
     private static final String USUARIO = "root";
 
-    private static final String PASSWORD = "TU_CONTRASEÑA_MYSQL";
+    private static final String PASSWORD = "Lucas2203";
 
     public static Connection conectar() {
         Connection conexion = null;

@@ -137,10 +137,8 @@ try (Connection conexion = ConexionBD.conectar();
                     "Bienvenido " + nombre + " " + apellido
                     + "\nRol: " + rol
             );
-            ProductosForm productosForm = new ProductosForm();
-productosForm.setVisible(true);
-this.dispose();
-
+MenuPrincipalForm menu = new MenuPrincipalForm();
+menu.setVisible(true);this.dispose();
         } else {
 
             JOptionPane.showMessageDialog(
