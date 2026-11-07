@@ -47,11 +47,11 @@ public class LoginForm extends javax.swing.JFrame {
 
         jLabel2.setText("Usuario");
 
-        txtUsuario.setText("jTextField1");
+        txtUsuario.setText("");
 
         jLabel3.setText("Contraseña:");
 
-        txtPassword.setText("jPasswordField1");
+        txtPassword.setText("");
 
         btnIngresar.setText("Ingresar");
         btnIngresar.addActionListener(this::btnIngresarActionPerformed);
@@ -102,63 +102,49 @@ public class LoginForm extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnIngresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnIngresarActionPerformed
-    String usuario = txtUsuario.getText();
-String password = new String(txtPassword.getPassword());
+        String usuario = txtUsuario.getText().trim();
+        String password = new String(txtPassword.getPassword());
 
-if (usuario.isEmpty() || password.isEmpty()) {
-    JOptionPane.showMessageDialog(
-            this,
-            "Debe completar usuario y contraseña."
-    );
- 
-    return;
-}
-
-String sql = "SELECT nombre, apellido, rol "
-        + "FROM usuario "
-        + "WHERE username = ? AND password = ? AND activo = TRUE";
-
-try (Connection conexion = ConexionBD.conectar();
-     PreparedStatement ps = conexion.prepareStatement(sql)) {
-
-    ps.setString(1, usuario);
-    ps.setString(2, password);
-
-    try (ResultSet rs = ps.executeQuery()) {
-
-        if (rs.next()) {
-
-            String nombre = rs.getString("nombre");
-            String apellido = rs.getString("apellido");
-            String rol = rs.getString("rol");
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Bienvenido " + nombre + " " + apellido
-                    + "\nRol: " + rol
-            );
-MenuPrincipalForm menu = new MenuPrincipalForm();
-menu.setVisible(true);this.dispose();
-        } else {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Usuario o contraseña incorrectos.",
-                    "Error de acceso",
-                    JOptionPane.ERROR_MESSAGE
-            );
+        if (usuario.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debe completar usuario y contraseña.");
+            return;
         }
-    }
 
-} catch (SQLException e) {
+        String sql = "SELECT id_usuario, nombre, apellido, rol "
+                + "FROM usuario "
+                + "WHERE username = ? AND password = ? AND activo = TRUE";
 
-    JOptionPane.showMessageDialog(
-            this,
-            "Error al acceder a la base de datos:\n" + e.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE
-    );
-}
+        try (Connection conexion = ConexionBD.conectar();
+             PreparedStatement ps = conexion.prepareStatement(sql)) {
+
+            ps.setString(1, usuario);
+            ps.setString(2, password);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Sesion.iniciar(rs.getInt("id_usuario"));
+                    String nombre = rs.getString("nombre");
+                    String apellido = rs.getString("apellido");
+                    String rol = rs.getString("rol");
+
+                    JOptionPane.showMessageDialog(this,
+                            "Bienvenido " + nombre + " " + apellido + "\nRol: " + rol);
+
+                    MenuPrincipalForm menu = new MenuPrincipalForm();
+                    menu.setLocationRelativeTo(null);
+                    menu.setVisible(true);
+                    this.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                            "Usuario o contraseña incorrectos.",
+                            "Error de acceso", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al acceder a la base de datos:\n" + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_btnIngresarActionPerformed
 
     /**

@@ -25,63 +25,83 @@ public class ProductosForm extends javax.swing.JFrame {
 public ProductosForm() {
     initComponents();
     setLocationRelativeTo(null);
+    prepararHerramientas();
     cargarProductos();
 }
+private final com.motorepuestossur.dao.ProductoDAO productoDAO = new com.motorepuestossur.dao.ProductoDAO();
+private final javax.swing.JTextField filtro = new javax.swing.JTextField(14);
+private final javax.swing.JComboBox<String> orden = new javax.swing.JComboBox<>(new String[]{"Nombre", "Stock"});
+private java.util.ArrayList<Producto> productos = new java.util.ArrayList<>();
+
+private void prepararHerramientas() {
+    javax.swing.JPanel herramientas = new javax.swing.JPanel();
+    herramientas.add(new javax.swing.JLabel("Buscar:"));
+    herramientas.add(filtro);
+    herramientas.add(new javax.swing.JLabel("Ordenar:"));
+    herramientas.add(orden);
+    javax.swing.JButton exportar = new javax.swing.JButton("Exportar CSV");
+    herramientas.add(exportar);
+    java.awt.Container contenidoOriginal = getContentPane();
+    javax.swing.JPanel contenedor = new javax.swing.JPanel(new java.awt.BorderLayout());
+    setContentPane(contenedor);
+    contenedor.add(contenidoOriginal, java.awt.BorderLayout.CENTER);
+    contenedor.add(herramientas, java.awt.BorderLayout.SOUTH);
+    filtro.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        public void insertUpdate(javax.swing.event.DocumentEvent e) { mostrarProductos(); }
+        public void removeUpdate(javax.swing.event.DocumentEvent e) { mostrarProductos(); }
+        public void changedUpdate(javax.swing.event.DocumentEvent e) { mostrarProductos(); }
+    });
+    orden.addActionListener(e -> mostrarProductos());
+    exportar.addActionListener(e -> exportarCSV());
+    pack();
+}
+
 private void cargarProductos() {
-
-    DefaultTableModel modelo = new DefaultTableModel();
-
-    modelo.addColumn("Código");
-    modelo.addColumn("Producto");
-    modelo.addColumn("Categoría");
-    modelo.addColumn("Precio");
-    modelo.addColumn("Stock actual");
-    modelo.addColumn("Stock mínimo");
-
-    String sql = """
-        SELECT
-            p.codigo,
-            p.nombre AS producto,
-            c.nombre AS categoria,
-            p.precio,
-            p.stock_actual,
-            p.stock_minimo
-        FROM producto p
-        INNER JOIN categoria c
-            ON p.id_categoria = c.id_categoria
-        WHERE p.activo = TRUE
-        ORDER BY p.nombre
-        """;
-
-    try (Connection conexion = ConexionBD.conectar();
-         PreparedStatement ps = conexion.prepareStatement(sql);
-         ResultSet rs = ps.executeQuery()) {
-
-        while (rs.next()) {
-
-            Object[] fila = {
-                rs.getString("codigo"),
-                rs.getString("producto"),
-                rs.getString("categoria"),
-                rs.getDouble("precio"),
-                rs.getInt("stock_actual"),
-                rs.getInt("stock_minimo")
-            };
-
-            modelo.addRow(fila);
-        }
-
-        tablaProductos.setModel(modelo);
-
-    } catch (SQLException e) {
-
-        JOptionPane.showMessageDialog(
-                this,
-                "Error al cargar los productos:\n" + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE
-        );
+    try {
+        productos = productoDAO.listar();
+        mostrarProductos();
+    } catch (SQLException ex) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Error al consultar MySQL: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
     }
+}
+
+private void mostrarProductos() {
+    java.util.ArrayList<Producto> visibles = productoDAO.buscar(productos, filtro.getText());
+    if (orden.getSelectedIndex() == 1) productoDAO.ordenarPorStock(visibles);
+    else productoDAO.ordenarPorNombre(visibles);
+    // La información se presenta desde el ArrayList y se actualiza al buscar y ordenar.
+    javax.swing.table.DefaultTableModel modelo = new javax.swing.table.DefaultTableModel(
+        new String[]{"Código", "Producto", "Categoría", "Precio", "Stock actual", "Stock mínimo", "Estado"}, 0) {
+        public boolean isCellEditable(int r, int c) { return false; }
+    };
+    // Arreglo complementario al ArrayList: cada fila de la tabla.
+    for (Producto p : visibles) {
+        Object[] fila = {p.getCodigo(), p.getNombre(), p.getCategoria(), p.getPrecio(), p.getStockActual(),
+                         p.getStockMinimo(), p.tieneStockBajo() ? "Stock bajo" : "Normal"};
+        modelo.addRow(fila);
+    }
+    tablaProductos.setModel(modelo);
+}
+
+private void exportarCSV() {
+    javax.swing.JFileChooser selector = new javax.swing.JFileChooser();
+    selector.setSelectedFile(new java.io.File("productos.csv"));
+    if (selector.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+    try (java.io.BufferedWriter out = java.nio.file.Files.newBufferedWriter(
+            selector.getSelectedFile().toPath(), java.nio.charset.StandardCharsets.UTF_8)) {
+        out.write("codigo,nombre,categoria,precio,stock_actual,stock_minimo\n");
+        for (Producto p : productoDAO.buscar(productos, filtro.getText())) {
+            out.write(csv(p.getCodigo()) + "," + csv(p.getNombre()) + "," + csv(p.getCategoria()) + "," + p.getPrecio()
+                + "," + p.getStockActual() + "," + p.getStockMinimo() + "\n");
+        }
+        javax.swing.JOptionPane.showMessageDialog(this, "Archivo CSV guardado correctamente.");
+    } catch (java.io.IOException ex) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Error al guardar: " + ex.getMessage());
+    }
+}
+private static String csv(String texto) {
+    return "\"" + texto.replace("\"", "\"\"") + "\"";
 }
     /**
      * This method is called from within the constructor to initialize the form.
@@ -97,7 +117,7 @@ private void cargarProductos() {
         tablaProductos = new javax.swing.JTable();
         btnActualizar = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jLabel1.setText("GESTIÓN DE PRODUCTOS Y STOCK");
 

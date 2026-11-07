@@ -65,44 +65,24 @@ public class DevolucionesForm extends JFrame {
     }
 
     private void registrarDevolucion() {
-
-        String codigo = txtCodigoProducto.getText().trim();
-        String cantidadTexto = txtCantidad.getText().trim();
-
-        if (codigo.isEmpty() || cantidadTexto.isEmpty()) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Debe completar todos los campos."
-            );
-            return;
-        }
-
         try {
-
-            int cantidad = Integer.parseInt(cantidadTexto);
-
-            if (cantidad <= 0) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "La cantidad debe ser mayor a cero."
-                );
-                return;
-            }
-
-            String mensaje = "Devolución registrada correctamente.\n"
-                    + "Producto: " + codigo + "\n"
-                    + "Cantidad: " + cantidad + "\n"
-                    + "Reintegra stock: "
-                    + (chkReintegraStock.isSelected() ? "Sí" : "No");
-
-            JOptionPane.showMessageDialog(this, mensaje);
-
-        } catch (NumberFormatException ex) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "La cantidad debe ser un número entero."
-            );
+            String venta = JOptionPane.showInputDialog(this,"ID de la venta original:");
+            if (venta == null) return;
+            String motivo = JOptionPane.showInputDialog(this,"Motivo de la devolución:");
+            if (motivo == null) return;
+            int stock = new com.motorepuestossur.servicio.InventarioServicio().devolver(
+                txtCodigoProducto.getText(), txtCantidad.getText(),
+                chkReintegraStock.isSelected(), venta, motivo);
+            JOptionPane.showMessageDialog(this,
+                "Devolución guardada en MySQL. Stock actual: " + stock);
+            txtCantidad.setText("");
+        } catch (com.motorepuestossur.excepciones.OperacionInvalidaException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                "Validación", JOptionPane.WARNING_MESSAGE);
+        } catch (java.sql.SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                "No se pudo registrar la devolución en MySQL: " + ex.getMessage(),
+                "Base de datos", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

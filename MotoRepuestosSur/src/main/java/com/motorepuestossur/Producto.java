@@ -10,6 +10,7 @@ public class Producto {
     private int stockActual;
     private int stockMinimo;
     private boolean activo;
+    private String categoria = "";
 
     public Producto(int idProducto, String codigo, String nombre,
                     String descripcion, double precio,
@@ -52,6 +53,10 @@ public class Producto {
     public int getStockMinimo() {
         return stockMinimo;
     }
+
+    public String getCategoria() { return categoria; }
+
+    public void setCategoria(String categoria) { this.categoria = categoria; }
 
     public boolean isActivo() {
         return activo;

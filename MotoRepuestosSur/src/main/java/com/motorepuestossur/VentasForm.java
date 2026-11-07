@@ -36,7 +36,7 @@ public class VentasForm extends javax.swing.JFrame {
         jTextField2 = new javax.swing.JTextField();
         jButton2 = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jLabel1.setText("VENTAS");
 
@@ -114,34 +114,20 @@ this.dispose();        // TODO add your handling code here:
     }//GEN-LAST:event_jTextField2ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-String codigo = jTextField1.getText();
-String cantidadTexto = jTextField2.getText();
-
-if (codigo.isEmpty() || cantidadTexto.isEmpty()) {
-    javax.swing.JOptionPane.showMessageDialog(this,
-            "Debe completar todos los campos.");
-    return;
-}
-
-try {
-    int cantidad = Integer.parseInt(cantidadTexto);
-
-    if (cantidad <= 0) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-                "La cantidad debe ser mayor a cero.");
-        return;
-    }
-
-    javax.swing.JOptionPane.showMessageDialog(this,
-            """
-            Venta registrada correctamente.
-            Producto: """ + codigo + "\n"
-            + "Cantidad: " + cantidad);
-
-} catch (NumberFormatException e) {
-    javax.swing.JOptionPane.showMessageDialog(this,
-            "La cantidad debe ser un número entero.");
-}     // TODO add your handling code here:
+        try {
+            int stock = new com.motorepuestossur.servicio.InventarioServicio().vender(
+                jTextField1.getText(), jTextField2.getText());
+            javax.swing.JOptionPane.showMessageDialog(this,
+                "Venta guardada en MySQL. Stock restante: " + stock);
+            jTextField2.setText("");
+        } catch (com.motorepuestossur.excepciones.OperacionInvalidaException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this, ex.getMessage(),
+                "Validación", javax.swing.JOptionPane.WARNING_MESSAGE);
+        } catch (java.sql.SQLException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                "No se pudo registrar la venta en MySQL: " + ex.getMessage(),
+                "Base de datos", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
